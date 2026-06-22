@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,7 +9,10 @@ import {
   Post,
   Query,
   Redirect,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
 import { OnboardingService } from './onboarding.service';
@@ -29,6 +33,7 @@ export class OnboardingController {
     const result = await this.onboardingService.initiateOnboarding(dto);
     return {
       clientLinkId: result.clientLinkId,
+      merchantId: result.merchantId,
       redirectUrl: result.redirectUrl,
       message: 'Redirect the merchant to the provided URL to complete authorization.',
     };
@@ -41,6 +46,7 @@ export class OnboardingController {
    * Exchanges the authorization code for OAuth tokens.
    */
   @Get('callback')
+  @Redirect()
   async oauthCallback(
     @Query('code') code: string,
     @Query('state') state: string,
@@ -48,19 +54,35 @@ export class OnboardingController {
     @Query('error_description') errorDescription?: string,
   ) {
     if (error) {
-      return {
-        success: false,
+      const params = new URLSearchParams({
         error,
-        errorDescription,
-      };
+        errorDescription: errorDescription ?? 'Authorization was denied or failed.',
+      });
+      return { url: `/dashboard.html?${params.toString()}`, statusCode: 302 };
     }
 
-    const result = await this.onboardingService.handleOAuthCallback(code, state);
-    return {
-      success: true,
-      merchantId: result.merchantId,
-      message: 'Authorization successful. You can now check the onboarding status.',
-    };
+    let merchantId: string;
+    try {
+      ({ merchantId } = await this.onboardingService.handleOAuthCallback(code, state));
+    } catch (err) {
+      const message =
+        err instanceof BadRequestException
+          ? (err.getResponse() as string | { message?: string })
+          : 'OAuth callback failed.';
+      const errorText =
+        typeof message === 'string' ? message : (message.message ?? 'OAuth callback failed.');
+      const params = new URLSearchParams({
+        error: 'callback_failed',
+        errorDescription: errorText,
+      });
+      return { url: `/dashboard.html?${params.toString()}`, statusCode: 302 };
+    }
+
+    const params = new URLSearchParams({
+      merchantId,
+      connected: 'true',
+    });
+    return { url: `/dashboard.html?${params.toString()}`, statusCode: 302 };
   }
 
   /**
@@ -72,6 +94,17 @@ export class OnboardingController {
   async getOnboardingStatus(@Param('merchantId') merchantId: string) {
     const status = await this.onboardingService.getOnboardingStatus(merchantId);
     return { merchantId, ...status };
+  }
+
+  /**
+   * GET /api/v1/onboarding/capabilities/:merchantId
+   *
+   * Returns Mollie capability requirements with dashboard deep links.
+   */
+  @Get('capabilities/:merchantId')
+  async getCapabilities(@Param('merchantId') merchantId: string) {
+    const capabilities = await this.onboardingService.getCapabilities(merchantId);
+    return { merchantId, ...capabilities };
   }
 
   /**
@@ -98,10 +131,106 @@ export class OnboardingController {
   }
 
   /**
+   * GET /api/v1/onboarding/merchants
+   *
+   * Lists all merchants sent for onboarding with status flow and missing items.
+   */
+  @Get('merchants')
+  async listMerchants(@Query('sync') sync?: string) {
+    if (sync === 'true') {
+      const merchants = await this.onboardingService.syncAllMerchants();
+      return { count: merchants.length, merchants };
+    }
+    const merchants = this.onboardingService.listMerchants();
+    return { count: merchants.length, merchants };
+  }
+
+  /**
+   * GET /api/v1/onboarding/merchants/:merchantId
+   */
+  @Get('merchants/:merchantId')
+  async getMerchant(
+    @Param('merchantId') merchantId: string,
+    @Query('sync') sync?: string,
+  ) {
+    if (sync === 'true') {
+      const merchant = await this.onboardingService.syncMerchant(merchantId);
+      return { merchant };
+    }
+    const merchant = this.onboardingService.getMerchant(merchantId);
+    return { merchant };
+  }
+
+  /**
+   * POST /api/v1/onboarding/merchants/sync
+   *
+   * Refreshes Mollie status for all connected merchants.
+   */
+  @Post('merchants/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncAllMerchants() {
+    const merchants = await this.onboardingService.syncAllMerchants();
+    return { count: merchants.length, merchants };
+  }
+
+  /**
+   * POST /api/v1/onboarding/merchants/:merchantId/sync
+   */
+  @Post('merchants/:merchantId/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncMerchant(@Param('merchantId') merchantId: string) {
+    const merchant = await this.onboardingService.syncMerchant(merchantId);
+    return { merchant };
+  }
+
+  @Post('merchants/:merchantId/kyc-documents')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'idDocumentFront', maxCount: 1 },
+      { name: 'idDocumentBack', maxCount: 1 },
+    ]),
+  )
+  async uploadKycDocuments(
+    @Param('merchantId') merchantId: string,
+    @UploadedFiles()
+    files: {
+      idDocumentFront?: Express.Multer.File[];
+      idDocumentBack?: Express.Multer.File[];
+    },
+  ) {
+    return this.onboardingService.uploadKycDocuments(merchantId, files);
+  }
+
+  /**
+   * GET /api/v1/onboarding/required-fields
+   *
+   * Documents Mollie-required fields for Danish merchant approval.
+   */
+  @Get('required-fields')
+  getRequiredFields() {
+    return this.onboardingService.getRequiredFields();
+  }
+
+  /**
+   * GET /api/v1/onboarding/payment-methods
+   *
+   * Returns recommended Danish payment methods for Mollie profiles.
+   */
+  @Get('payment-methods')
+  getPaymentMethods() {
+    return {
+      country: 'DK',
+      currency: 'DKK',
+      methods: this.onboardingService.getDanishPaymentMethods(),
+    };
+  }
+
+  /**
    * POST /api/v1/onboarding/profiles/:profileId/methods/:methodId
    *
    * Enables a payment method on a merchant's profile.
-   * Common methodIds: ideal, creditcard, bancontact, paypal, applepay, banktransfer
+   * Danish methodIds: mobilepay, creditcard, applepay, paypal, banktransfer, klarna
    */
   @Post('profiles/:profileId/methods/:methodId')
   @HttpCode(HttpStatus.OK)

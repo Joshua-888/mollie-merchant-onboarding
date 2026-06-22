@@ -13,24 +13,24 @@ const ONBOARDING_STATUS_MESSAGES: Record<
 > = {
   'needs-data': {
     false: {
-      false: 'Before you can receive payments, Mollie needs more information.',
+      false: 'Før du kan modtage betalinger, skal Mollie have flere oplysninger.',
     },
     true: {
       false:
-        'You can start receiving payments. Before Mollie can pay out to your bank, you need to provide some additional information.',
+        'Du kan begynde at modtage betalinger. Før Mollie kan udbetale til din bank, skal du angive yderligere oplysninger.',
     },
   },
   'in-review': {
     false: {
-      false: 'Mollie has all the required information and is verifying your details.',
+      false: 'Mollie har alle nødvendige oplysninger og verificerer dine data.',
     },
     true: {
       false:
-        'You can start receiving payments. Mollie is verifying your details to enable settlements to your bank.',
+        'Du kan begynde at modtage betalinger. Mollie verificerer dine oplysninger for at aktivere udbetalinger til din bank.',
     },
   },
   completed: {
-    true: { true: 'Setup is complete!' },
+    true: { true: 'Opsætningen er fuldført!' },
   },
 };
 
@@ -43,7 +43,7 @@ function resolveOnboardingMessage(
   const settlements = String(canReceiveSettlements);
   return (
     ONBOARDING_STATUS_MESSAGES[status]?.[payments]?.[settlements] ??
-    'Onboarding is in progress.'
+    'Onboarding er i gang.'
   );
 }
 

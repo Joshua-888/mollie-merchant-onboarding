@@ -20,6 +20,32 @@ export interface MollieClientLinkRequestDto {
   address?: MollieAddressDto;
   registrationNumber?: string | null;
   vatNumber?: string | null;
+  legalEntity?: string;
+  incorporationDate?: string | null;
+}
+
+export interface MollieCapabilityRequirementDto {
+  id: string;
+  status: string;
+  dueDate?: string | null;
+  _links?: {
+    dashboard?: { href: string; type: string };
+  };
+}
+
+export interface MollieCapabilityDto {
+  resource: 'capability';
+  name: string;
+  status: 'unrequested' | 'enabled' | 'disabled' | 'pending';
+  statusReason?: string | null;
+  requirements: MollieCapabilityRequirementDto[];
+}
+
+export interface MollieCapabilitiesResponseDto {
+  count: number;
+  _embedded: {
+    capabilities: MollieCapabilityDto[];
+  };
 }
 
 export interface MollieClientLinkResponseDto {
@@ -122,6 +148,7 @@ export interface MerchantAddress {
 
 export interface ClientLinkResult {
   clientLinkId: string;
+  merchantId: string;
   redirectUrl: string;
 }
 

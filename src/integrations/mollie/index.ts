@@ -3,3 +3,4 @@ export { MollieClient } from './mollie.client';
 export * from './mollie.types';
 export * from './mollie.errors';
 export * from './mollie.mapper';
+export * from './mollie.capabilities.mapper';

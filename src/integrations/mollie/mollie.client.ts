@@ -14,6 +14,7 @@ import {
 import {
   MollieClientLinkRequestDto,
   MollieClientLinkResponseDto,
+  MollieCapabilitiesResponseDto,
   MollieOnboardingStatusDto,
   MolliePaymentMethodDto,
   MollieProfileRequestDto,
@@ -159,6 +160,15 @@ export class MollieClient {
       url: '/v2/onboarding/me',
       token: merchantAccessToken,
       operation: 'getOnboardingStatus',
+    });
+  }
+
+  async listCapabilities(merchantAccessToken: string): Promise<MollieCapabilitiesResponseDto> {
+    return this.request<MollieCapabilitiesResponseDto>({
+      method: 'GET',
+      url: '/v2/capabilities',
+      token: merchantAccessToken,
+      operation: 'listCapabilities',
     });
   }
 

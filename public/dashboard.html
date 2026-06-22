@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Onboarding dashboard — Takeawayhero Danmark</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header>
+        <div class="logo">Takeaway<span>hero</span> · Danmark</div>
+        <nav>
+          <a href="/index.html">Onboard merchant</a>
+          <a href="/merchants.html">Merchants</a>
+          <a href="/dashboard.html" class="active">Dashboard</a>
+        </nav>
+      </header>
+
+      <h1>Onboarding dashboard</h1>
+      <p class="subtitle">
+        Følg onboarding-status, opret betalingsprofiler og aktiver danske betalingsmetoder
+        (MobilePay, Visa / Mastercard, Apple Pay / Google Pay m.fl.).
+      </p>
+
+      <div id="alert" class="hidden"></div>
+
+      <div class="card">
+        <h2>Vælg merchant</h2>
+        <div class="merchant-picker">
+          <div style="flex: 1">
+            <label for="merchant-id-input">Merchant-ID</label>
+            <input
+              id="merchant-id-input"
+              type="text"
+              placeholder="dk-merchant-abc123"
+            />
+          </div>
+          <button type="button" id="load-btn" class="btn btn-primary">Indlæs dashboard</button>
+          <button type="button" id="refresh-btn" class="btn btn-secondary">Opdatér</button>
+        </div>
+        <div id="recent-merchants" class="recent-merchants"></div>
+      </div>
+
+      <div id="status-section" class="card hidden">
+        <h2>Onboarding-status</h2>
+        <div class="status-grid">
+          <div class="stat">
+            <div class="stat-label">Virksomhed</div>
+            <div class="stat-value" id="org-name">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Status</div>
+            <div class="stat-value"><span id="status-badge" class="badge">—</span></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Kan modtage betalinger</div>
+            <div class="stat-value"><span id="payments-badge" class="badge">—</span></div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Kan modtage udbetalinger</div>
+            <div class="stat-value"><span id="settlements-badge" class="badge">—</span></div>
+          </div>
+        </div>
+        <p id="status-message" class="subtitle" style="margin-bottom: 1rem"></p>
+        <div id="requirements-section" class="hidden">
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem">Mollie-krav</h3>
+          <div id="requirements-list" class="missing-list"></div>
+        </div>
+        <a id="mollie-dashboard-link" href="#" target="_blank" rel="noopener" class="btn btn-secondary hidden">
+          Fuldfør onboarding hos Mollie →
+        </a>
+      </div>
+
+      <div id="local-kyc-section" class="card hidden">
+        <h2>Lokal KYC (Takeawayhero)</h2>
+        <p class="subtitle" style="margin-bottom: 1rem">
+          Oplysninger indsamlet i onboarding-formularen. Skal stadig bekræftes hos Mollie.
+        </p>
+        <div id="local-kyc-content"></div>
+      </div>
+
+      <div id="profiles-section" class="card hidden">
+        <h2>Betalingsprofiler</h2>
+        <ul id="profile-list" class="profile-list"></ul>
+      </div>
+
+      <div id="profile-form-section" class="card hidden">
+        <h2>Opret betalingsprofil</h2>
+        <form id="profile-form">
+          <div class="form-grid">
+            <div>
+              <label for="profile-name">Profilnavn *</label>
+              <input id="profile-name" name="name" type="text" required placeholder="Restaurant Sørensen" />
+            </div>
+            <div>
+              <label for="profile-email">E-mail *</label>
+              <input id="profile-email" name="email" type="email" required placeholder="betaling@restaurant.dk" />
+            </div>
+            <div class="full-width">
+              <label for="profile-website">Website *</label>
+              <input id="profile-website" name="website" type="url" required placeholder="https://restaurant-soerensen.dk" />
+            </div>
+            <div>
+              <label for="profile-phone">Telefon</label>
+              <input id="profile-phone" name="phone" type="tel" placeholder="+45 12 34 56 78" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Opret profil</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="methods-info-section" class="card">
+        <h2>Tilgængelige danske betalingsmetoder</h2>
+        <p class="subtitle" style="margin-bottom: 1rem">
+          Aktiver disse metoder på en merchants profil efter onboarding er fuldført.
+        </p>
+        <div id="available-methods" class="method-chips"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/dashboard.js"></script>
+  </body>
+</html>

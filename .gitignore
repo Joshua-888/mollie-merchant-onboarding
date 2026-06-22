@@ -28,5 +28,8 @@ Thumbs.db
 # Test coverage
 coverage/
 
+# Sensitive KYC document uploads (local dev only)
+uploads/
+
 # TypeScript incremental build
 *.tsbuildinfo

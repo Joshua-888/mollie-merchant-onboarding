@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merchants — Takeawayhero Danmark</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="layout layout-wide">
+      <header>
+        <div class="logo">Takeaway<span>hero</span> · Danmark</div>
+        <nav>
+          <a href="/index.html">Onboard merchant</a>
+          <a href="/merchants.html" class="active">Merchants</a>
+          <a href="/dashboard.html">Dashboard</a>
+        </nav>
+      </header>
+
+      <div class="page-header-row">
+        <div>
+          <h1>Merchant oversigt</h1>
+          <p class="subtitle">
+            Alle merchants sendt til onboarding med statusflow og oversigt over manglende oplysninger.
+          </p>
+        </div>
+        <div class="page-header-actions">
+          <button type="button" id="refresh-btn" class="btn btn-secondary">Opdatér liste</button>
+          <button type="button" id="sync-all-btn" class="btn btn-primary">Synkronisér med Mollie</button>
+        </div>
+      </div>
+
+      <div id="alert" class="hidden"></div>
+
+      <div class="card summary-bar">
+        <span id="merchant-count" class="summary-count">0 merchants</span>
+        <span class="summary-hint">Synkronisér for at hente seneste status fra Mollie for godkendte merchants.</span>
+      </div>
+
+      <div id="empty-state" class="card empty-state hidden">
+        <h2>Ingen merchants endnu</h2>
+        <p class="subtitle">Send den første merchant til onboarding for at se dem her.</p>
+        <a href="/index.html" class="btn btn-primary">Onboard merchant</a>
+      </div>
+
+      <div id="merchant-list" class="merchant-list"></div>
+    </div>
+
+    <script type="module" src="/js/merchants.js"></script>
+  </body>
+</html>

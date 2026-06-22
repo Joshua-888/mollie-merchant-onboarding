@@ -1,7 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
-import { AppConfig } from '../config/configuration';
+import { AppConfig, MOLLIE_OAUTH_SCOPES } from '../config/configuration';
+import {
+  DENMARK_COUNTRY_CODE,
+  DENMARK_DEFAULT_LOCALE,
+  DENMARK_LEGAL_ENTITIES,
+  DENMARK_PAYMENT_METHODS,
+  MOLLIE_ONBOARDING_FIELD_GROUPS,
+} from '../config/denmark.config';
 import { MollieClient } from '../integrations/mollie/mollie.client';
 import {
   mapOnboardingStatus,
@@ -9,14 +15,26 @@ import {
   mapTokenResponse,
 } from '../integrations/mollie/mollie.mapper';
 import {
+  CapabilitiesSummary,
+  mapCapabilities,
+} from '../integrations/mollie/mollie.capabilities.mapper';
+import {
   ClientLinkResult,
   MerchantProfile,
   MolliePaymentMethodDto,
   OnboardingStatus,
 } from '../integrations/mollie/mollie.types';
+import { MerchantRegistry } from '../merchants/merchant-registry';
+import { MerchantListItem } from '../merchants/merchant-flow';
 import { MerchantTokenStore } from '../merchants/merchant-token.store';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
+import { KycDocumentStorage } from './kyc-document.storage';
+import {
+  MerchantLocalKycSnapshot,
+  normalizeIban,
+  validateLocalKyc,
+} from './kyc-validation';
 
 @Injectable()
 export class OnboardingService {
@@ -26,6 +44,8 @@ export class OnboardingService {
   constructor(
     private readonly mollieClient: MollieClient,
     private readonly tokenStore: MerchantTokenStore,
+    private readonly merchantRegistry: MerchantRegistry,
+    private readonly kycDocumentStorage: KycDocumentStorage,
     private readonly configService: ConfigService<AppConfig, true>,
   ) {
     this.mollieConfig = this.configService.get('mollie', { infer: true });
@@ -36,36 +56,35 @@ export class OnboardingService {
    * The caller (frontend) should redirect the merchant to this URL.
    */
   async initiateOnboarding(dto: InitiateOnboardingDto): Promise<ClientLinkResult> {
-    const state = uuidv4();
+    const kycValidation = validateLocalKyc(dto.localKyc, { legalEntity: dto.legalEntity });
+    if (!kycValidation.valid) {
+      throw new BadRequestException(kycValidation.errors.join('; '));
+    }
+
+    const localKycSnapshot = this.buildLocalKycSnapshot(dto, kycValidation);
+    const state = dto.merchantId;
 
     const response = await this.mollieClient.createClientLink({
       owner: {
         email: dto.email,
         givenName: dto.givenName,
         familyName: dto.familyName,
-        locale: dto.locale ?? null,
+        locale: dto.locale ?? DENMARK_DEFAULT_LOCALE,
       },
       name: dto.organizationName,
-      address: dto.address
-        ? {
-            streetAndNumber: dto.address.streetAndNumber,
-            postalCode: dto.address.postalCode,
-            city: dto.address.city,
-            country: dto.address.country,
-          }
-        : undefined,
+      address: {
+        streetAndNumber: dto.address.streetAndNumber,
+        postalCode: dto.address.postalCode,
+        city: dto.address.city,
+        country: dto.address.country ?? DENMARK_COUNTRY_CODE,
+      },
       registrationNumber: dto.registrationNumber,
-      vatNumber: dto.vatNumber,
+      vatNumber: dto.vatNumber ?? null,
+      legalEntity: dto.legalEntity,
+      incorporationDate: dto.incorporationDate ?? null,
     });
 
-    const scopes = [
-      'onboarding.read',
-      'onboarding.write',
-      'profiles.read',
-      'profiles.write',
-      'payments.read',
-      'payments.write',
-    ].join(' ');
+    const scopes = MOLLIE_OAUTH_SCOPES.join(' ');
 
     const params = new URLSearchParams({
       client_id: this.mollieConfig.clientId,
@@ -81,8 +100,11 @@ export class OnboardingService {
       clientLinkId: response.id,
     });
 
+    this.merchantRegistry.registerFromInitiate(dto, response.id, localKycSnapshot);
+
     return {
       clientLinkId: response.id,
+      merchantId: dto.merchantId,
       redirectUrl,
     };
   }
@@ -92,14 +114,32 @@ export class OnboardingService {
    * and store them against the merchantId encoded in the state.
    */
   async handleOAuthCallback(code: string, state: string): Promise<{ merchantId: string }> {
+    if (!code?.trim()) {
+      throw new BadRequestException('Missing authorization code from Mollie callback');
+    }
+    if (!state?.trim()) {
+      throw new BadRequestException('Missing state parameter from Mollie callback');
+    }
+
     const tokenDto = await this.mollieClient.exchangeAuthCode(code);
     const tokens = mapTokenResponse(tokenDto);
 
     // The state is used as the merchantId key for simplicity.
     // In production, store state→merchantId mapping in a short-lived cache (Redis/DB).
     this.tokenStore.save(state, tokens);
+    this.merchantRegistry.markConnected(state);
 
     this.logger.log({ action: 'handleOAuthCallback', merchantId: state });
+
+    try {
+      await this.syncMerchant(state);
+    } catch (error) {
+      this.logger.warn({
+        action: 'postConnectSyncFailed',
+        merchantId: state,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
 
     return { merchantId: state };
   }
@@ -110,7 +150,17 @@ export class OnboardingService {
   async getOnboardingStatus(merchantId: string): Promise<OnboardingStatus> {
     const accessToken = await this.resolveAccessToken(merchantId);
     const dto = await this.mollieClient.getOnboardingStatus(accessToken);
-    return mapOnboardingStatus(dto);
+    const status = mapOnboardingStatus(dto);
+    this.merchantRegistry.updateMollieStatus(merchantId, status);
+    return status;
+  }
+
+  async getCapabilities(merchantId: string): Promise<CapabilitiesSummary> {
+    const accessToken = await this.resolveAccessToken(merchantId);
+    const dto = await this.mollieClient.listCapabilities(accessToken);
+    const summary = mapCapabilities(dto);
+    this.merchantRegistry.updateCapabilities(merchantId, summary);
+    return summary;
   }
 
   /**
@@ -123,9 +173,16 @@ export class OnboardingService {
       website: dto.website,
       email: dto.email,
       phone: dto.phone,
-      mode: 'live',
+      mode: this.mollieConfig.apiMode,
     });
-    return mapProfile(profileDto);
+    const profile = mapProfile(profileDto);
+    try {
+      const profiles = await this.listProfiles(dto.merchantId);
+      this.merchantRegistry.updateProfileCount(dto.merchantId, profiles.length);
+    } catch {
+      this.merchantRegistry.updateProfileCount(dto.merchantId, 1);
+    }
+    return profile;
   }
 
   /**
@@ -157,10 +214,138 @@ export class OnboardingService {
   async listProfiles(merchantId: string): Promise<MerchantProfile[]> {
     const accessToken = await this.resolveAccessToken(merchantId);
     const profiles = await this.mollieClient.listProfiles(accessToken);
-    return profiles.map(mapProfile);
+    const mapped = profiles.map(mapProfile);
+    this.merchantRegistry.updateProfileCount(merchantId, mapped.length);
+    return mapped;
+  }
+
+  listMerchants(): MerchantListItem[] {
+    return this.merchantRegistry.listAllWithFlow();
+  }
+
+  getMerchant(merchantId: string): MerchantListItem {
+    return this.merchantRegistry.getWithFlow(merchantId);
+  }
+
+  async syncMerchant(merchantId: string): Promise<MerchantListItem> {
+    const record = this.merchantRegistry.get(merchantId);
+    if (!record) {
+      throw new NotFoundException(`Merchant not found: ${merchantId}`);
+    }
+
+    if (this.tokenStore.exists(merchantId)) {
+      await this.getOnboardingStatus(merchantId);
+      try {
+        await this.getCapabilities(merchantId);
+      } catch (error) {
+        this.logger.warn({
+          action: 'syncCapabilitiesFailed',
+          merchantId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+      try {
+        await this.listProfiles(merchantId);
+      } catch {
+        // Profiles may not be available yet during early onboarding.
+      }
+    }
+
+    return this.merchantRegistry.getWithFlow(merchantId);
+  }
+
+  async syncAllMerchants(): Promise<MerchantListItem[]> {
+    const merchants = this.merchantRegistry.listAll();
+
+    for (const merchant of merchants) {
+      if (this.tokenStore.exists(merchant.merchantId)) {
+        try {
+          await this.syncMerchant(merchant.merchantId);
+        } catch (error) {
+          this.logger.warn({
+            action: 'syncMerchantFailed',
+            merchantId: merchant.merchantId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    return this.merchantRegistry.listAllWithFlow();
+  }
+
+  async uploadKycDocuments(
+    merchantId: string,
+    files: {
+      idDocumentFront?: Express.Multer.File[];
+      idDocumentBack?: Express.Multer.File[];
+    },
+  ): Promise<{ merchantId: string; documentsUploaded: boolean }> {
+    const record = this.merchantRegistry.get(merchantId);
+    if (!record) {
+      throw new NotFoundException(`Merchant not found: ${merchantId}`);
+    }
+
+    const saved: { front?: string; back?: string } = {};
+
+    if (files.idDocumentFront?.[0]) {
+      const doc = this.kycDocumentStorage.save(merchantId, 'front', files.idDocumentFront[0]);
+      saved.front = doc.storedName;
+    }
+
+    if (files.idDocumentBack?.[0]) {
+      const doc = this.kycDocumentStorage.save(merchantId, 'back', files.idDocumentBack[0]);
+      saved.back = doc.storedName;
+    }
+
+    if (!saved.front && !saved.back) {
+      throw new BadRequestException('Mindst ét identitetsdokument skal uploades');
+    }
+
+    this.merchantRegistry.updateKycDocuments(merchantId, saved);
+    const updated = this.merchantRegistry.get(merchantId);
+
+    return {
+      merchantId,
+      documentsUploaded: Boolean(updated?.localKyc?.documentsUploaded),
+    };
+  }
+
+  getDanishPaymentMethods() {
+    return DENMARK_PAYMENT_METHODS;
+  }
+
+  getRequiredFields() {
+    return {
+      country: DENMARK_COUNTRY_CODE,
+      currency: 'DKK',
+      source: 'https://docs.mollie.com/reference/create-client-link',
+      groups: MOLLIE_ONBOARDING_FIELD_GROUPS,
+      legalEntities: DENMARK_LEGAL_ENTITIES,
+    };
   }
 
   // ─── Private ──────────────────────────────────────────────────────────────
+
+  private buildLocalKycSnapshot(
+    dto: InitiateOnboardingDto,
+    validation: ReturnType<typeof validateLocalKyc>,
+  ): MerchantLocalKycSnapshot {
+    return {
+      identity: dto.localKyc.identity,
+      ubos: dto.localKyc.ubos,
+      bankAccount: {
+        ...dto.localKyc.bankAccount,
+        iban: normalizeIban(dto.localKyc.bankAccount.iban),
+        bic: dto.localKyc.bankAccount.bic?.toUpperCase(),
+      },
+      validationPassed: validation.valid,
+      validationErrors: validation.errors,
+      validationWarnings: validation.warnings,
+      documentsUploaded: false,
+      collectedAt: new Date(),
+    };
+  }
 
   /**
    * Returns a valid (non-expired) access token for a merchant, refreshing if needed.

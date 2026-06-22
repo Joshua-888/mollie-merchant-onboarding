@@ -1,152 +1,181 @@
-# Mollie Merchant Onboarding
+# Mollie Merchant Onboarding — Danmark
 
-A NestJS service that automates the onboarding of new Takeawayhero merchants onto the Mollie payment platform.
+NestJS-tjeneste der automatiserer onboarding af nye Takeawayhero-merchants på Mollie betalingsplatformen, tilpasset **danske virksomheder** med lokale betalingsmetoder (MobilePay, Visa / Mastercard, Apple Pay / Google Pay m.fl.).
 
 ## Overview
 
-This service implements the [Mollie Connect for Platforms](https://docs.mollie.com/docs/connect-platforms-onboarding-customers) onboarding flow:
+Denne service implementerer [Mollie Connect for Platforms](https://docs.mollie.com/docs/connect-platforms-onboarding-customers) onboarding-flowet for Danmark:
 
-1. **Initiate** — Creates a Mollie Client Link prefilled with merchant business data. The merchant is redirected to Mollie to authorize your platform.
-2. **Callback** — Handles the OAuth redirect, exchanges the authorization code for an access + refresh token.
-3. **Status** — Polls the merchant's onboarding progress (`needs-data` → `in-review` → `completed`).
-4. **Profiles** — Creates a payment profile (storefront) for the merchant.
-5. **Methods** — Enables specific payment methods (iDEAL, credit card, Bancontact, etc.) on the profile.
+1. **Initiate** — Opretter et Mollie Client Link med danske virksomhedsdata (CVR, adresse, moms) + lokal KYC (identitet, UBO, bank).
+2. **Callback** — Håndterer OAuth redirect og gemmer access/refresh tokens.
+3. **Status / Capabilities** — Følger onboarding og viser præcise Mollie-krav med dashboard deep links.
+4. **Profiles** — Opretter betalingsprofil for merchantens website.
+5. **Methods** — Aktiverer danske betalingsmetoder på profilen.
+
+### Lokal KYC vs. Mollie
+
+| Data | Indsamles i Takeawayhero | Sendes til Mollie via API |
+|---|---|---|
+| Kontaktperson, virksomhed, adresse, profil | ✅ | ✅ (Client Links) |
+| Identitet, UBO, bankkonto | ✅ (valideres lokalt) | ❌ (merchant bekræfter i Mollie-dashboard) |
+| ID-dokument (fil) | ✅ (`uploads/kyc/`) | ❌ |
+
+### Understøttede danske betalingsmetoder
+
+| Metode | Mollie ID | Anbefalet |
+|---|---|---|
+| MobilePay | `mobilepay` | ★ |
+| Visa / Mastercard | `creditcard` | ★ |
+| Apple Pay / Google Pay | `applepay` | ★ |
+| PayPal | `paypal` | |
+| Bankoverførsel | `banktransfer` | |
+| Klarna | `klarna` | |
+
+> MobilePay kræver dansk virksomhed og kan kræve separat MobilePay-aftale hos Mollie.
 
 ---
 
 ## Prerequisites
 
 - Node.js 20+
-- A [Mollie Partner account](https://www.mollie.com/en/partners) with an OAuth application registered
-- An Advanced Access Token with `clients.write` scope
+- [Mollie Partner-konto](https://www.mollie.com/dk/partners) med OAuth-applikation
+- Advanced Access Token med `clients.write` scope
 
 ---
 
 ## Setup
 
 ```bash
-# Install dependencies
 npm install
-
-# Copy environment template and fill in your values
 cp .env.example .env
 ```
 
-### Required environment variables
+### Environment variables
 
 | Variable | Description |
 |---|---|
-| `MOLLIE_CLIENT_ID` | Your OAuth app's client ID (starts with `app_`) |
-| `MOLLIE_CLIENT_SECRET` | Your OAuth app's client secret |
-| `MOLLIE_ACCESS_TOKEN` | Advanced access token with `clients.write` scope |
-| `MOLLIE_REDIRECT_URI` | OAuth callback URL (must match your Mollie app settings) |
-| `APP_BASE_URL` | Base URL of this service |
+| `MOLLIE_CLIENT_ID` | OAuth app client ID (`app_...`) |
+| `MOLLIE_CLIENT_SECRET` | OAuth app client secret |
+| `MOLLIE_ACCESS_TOKEN` | Advanced token med `clients.write` |
+| `MOLLIE_REDIRECT_URI` | OAuth callback URL |
+| `APP_BASE_URL` | Base URL for denne service |
 
 ---
 
 ## Running
 
 ```bash
-# Development (hot reload)
 npm run start:dev
-
-# Production
-npm run build
-npm run start:prod
 ```
+
+| Side | URL |
+|---|---|
+| **Onboarding formular** | http://localhost:3000/index.html |
+| **Merchant oversigt** | http://localhost:3000/merchants.html |
+| **Dashboard** | http://localhost:3000/dashboard.html |
+
+### Lokal Mollie-opsætning
+
+1. Opret OAuth app på [Mollie Developers](https://my.mollie.com/dashboard/developers/applications)
+2. Sæt redirect URI til `http://localhost:3000/api/v1/onboarding/callback`
+3. Opret Advanced Access Token med `clients.write`
+4. Udfyld `.env` med dine credentials
 
 ---
 
 ## API Endpoints
 
-### 1. Initiate onboarding
+### Initiate onboarding (dansk merchant + lokal KYC)
 
 ```
 POST /api/v1/onboarding/initiate
 ```
 
-**Body:**
 ```json
 {
-  "merchantId": "your-internal-merchant-id",
-  "email": "owner@restaurant.nl",
-  "givenName": "Jan",
-  "familyName": "de Vries",
-  "organizationName": "Restaurant De Vries",
+  "merchantId": "dk-restaurant-001",
+  "email": "ejer@restaurant.dk",
+  "givenName": "Lars",
+  "familyName": "Nielsen",
+  "locale": "da_DK",
+  "organizationName": "Restaurant Sørensen ApS",
+  "legalEntity": "dk-anpartsselskab",
   "address": {
-    "streetAndNumber": "Hoofdstraat 1",
-    "postalCode": "1234AB",
-    "city": "Amsterdam",
-    "country": "NL"
+    "streetAndNumber": "Nørregade 10",
+    "postalCode": "2100",
+    "city": "København",
+    "country": "DK"
   },
   "registrationNumber": "12345678",
-  "vatNumber": "NL123456789B01"
+  "vatNumber": "DK12345678",
+  "website": "https://restaurant.dk",
+  "phone": "+4512345678",
+  "profileEmail": "betaling@restaurant.dk",
+  "localKyc": {
+    "identity": {
+      "documentType": "passport",
+      "documentNumber": "AB1234567",
+      "issuingCountry": "DK",
+      "dateOfBirth": "1985-06-15",
+      "nationality": "DK",
+      "expiryDate": "2030-01-01"
+    },
+    "ubos": [
+      {
+        "givenName": "Lars",
+        "familyName": "Nielsen",
+        "dateOfBirth": "1985-06-15",
+        "nationality": "DK",
+        "ownershipPercent": 100,
+        "isPseudoUbo": false,
+        "role": "Direktør"
+      }
+    ],
+    "bankAccount": {
+      "accountHolderName": "Restaurant Sørensen ApS",
+      "iban": "DK5000400440116243"
+    }
+  }
 }
 ```
 
-**Response:** Contains a `redirectUrl` — send the merchant to this URL.
-
----
-
-### 2. OAuth callback (called by Mollie)
+### Upload ID-dokument (efter initiate)
 
 ```
-GET /api/v1/onboarding/callback?code=...&state=...
+POST /api/v1/onboarding/merchants/:merchantId/kyc-documents
+Content-Type: multipart/form-data
 ```
 
-Mollie redirects the merchant here after authorization. The service exchanges the code for tokens.
+Felter: `idDocumentFront` (påkrævet), `idDocumentBack` (valgfri). JPEG, PNG eller PDF — max 5 MB.
 
----
-
-### 3. Get onboarding status
+### Capabilities (Mollie-krav med deep links)
 
 ```
-GET /api/v1/onboarding/status/:merchantId
+GET /api/v1/onboarding/capabilities/:merchantId
 ```
 
-Returns the current status and a user-friendly message.
-
-| Status | canReceivePayments | canReceiveSettlements | Action |
-|---|---|---|---|
-| `needs-data` | false | false | Show dashboard link for merchant to complete profile |
-| `needs-data` | true | false | Payments live; prompt for settlement info |
-| `in-review` | false | false | Awaiting Mollie review |
-| `in-review` | true | false | Payments live; awaiting settlement review |
-| `completed` | true | true | Fully live |
-
----
-
-### 4. Create a payment profile
+### Merchant oversigt
 
 ```
-POST /api/v1/onboarding/profiles
+GET /api/v1/onboarding/merchants
+GET /api/v1/onboarding/merchants?sync=true
+GET /api/v1/onboarding/merchants/:merchantId
+POST /api/v1/onboarding/merchants/sync
+POST /api/v1/onboarding/merchants/:merchantId/sync
 ```
 
-```json
-{
-  "merchantId": "your-internal-merchant-id",
-  "name": "Restaurant De Vries",
-  "website": "https://restaurant-devries.nl",
-  "email": "payments@restaurant-devries.nl"
-}
-```
+Returnerer merchants med statusflow, lokal KYC-summary, progress og manglende Mollie-krav.
 
----
-
-### 5. Enable a payment method
+### Betalingsmetoder
 
 ```
-POST /api/v1/onboarding/profiles/:profileId/methods/:methodId?merchantId=...
+GET /api/v1/onboarding/payment-methods
 ```
 
-Common `methodId` values: `ideal`, `creditcard`, `bancontact`, `paypal`, `applepay`, `banktransfer`
-
----
-
-### 6. List payment methods
+### Aktiver betalingsmetode
 
 ```
-GET /api/v1/onboarding/profiles/:profileId/methods?merchantId=...
+POST /api/v1/onboarding/profiles/:profileId/methods/mobilepay?merchantId=...
 ```
 
 ---
@@ -154,11 +183,8 @@ GET /api/v1/onboarding/profiles/:profileId/methods?merchantId=...
 ## Testing
 
 ```bash
-# Unit tests
 npm test
-
-# With coverage
-npm run test:cov
+npm run build
 ```
 
 ---
@@ -167,14 +193,16 @@ npm run test:cov
 
 ```
 src/
-├── config/               # Environment config + validation
-├── common/
-│   ├── filters/          # Global exception handler
-│   └── interceptors/     # Request logging
-├── integrations/
-│   └── mollie/           # Mollie API client, types, mapper, errors
-├── merchants/            # Token store (swap for DB-backed implementation)
-└── onboarding/           # Feature: controllers, service, DTOs
+├── config/denmark.config.ts       # Danske defaults og betalingsmetoder
+├── onboarding/
+│   ├── dto/kyc.dto.ts             # Lokal KYC DTOs
+│   ├── kyc-validation.ts          # IBAN, UBO, identitet validering
+│   └── kyc-document.storage.ts    # Fil-upload (uploads/kyc/)
+├── integrations/mollie/           # Mollie client, capabilities mapper
+└── merchants/                     # Registry, flow, token store
+public/
+├── index.html                     # Onboarding + lokal KYC formular
+├── merchants.html                 # Oversigt med Mollie-krav
+├── dashboard.html                 # Status, lokal KYC, profiler
+└── js/dk-config.js                # Frontend konfiguration
 ```
-
-**Token storage:** Tokens are stored in-memory by default. In production, replace `MerchantTokenStore` with a database-backed implementation. Refresh tokens must be encrypted at rest.

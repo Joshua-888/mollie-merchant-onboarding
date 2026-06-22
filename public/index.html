@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merchant onboarding — Takeawayhero Danmark</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <header>
+        <div class="logo">Takeaway<span>hero</span> · Danmark</div>
+        <nav>
+          <a href="/index.html" class="active">Onboard merchant</a>
+          <a href="/merchants.html">Merchants</a>
+          <a href="/dashboard.html">Dashboard</a>
+        </nav>
+      </header>
+
+      <h1>Onboard en ny dansk merchant</h1>
+      <p class="subtitle">
+        Felterne nedenfor matcher de oplysninger Mollie kræver for at godkende en merchant.
+        Efter indsendelse omdirigeres merchanten til Mollie for at godkende og fuldføre KYC.
+      </p>
+
+      <div id="alert" class="hidden"></div>
+
+      <div class="card info-panel">
+        <h2>Sådan fungerer onboarding</h2>
+        <ul class="info-list">
+          <li><strong>Trin 1–4 + KYC:</strong> indsamles her til Takeawayhero-registrering og forudvalidering</li>
+          <li><strong>Hos Mollie bagefter:</strong> merchant bekræfter identitet, UBO og bankkonto i Mollie-dashboardet (kan ikke sendes via API)</li>
+        </ul>
+      </div>
+
+      <form id="onboarding-form">
+        <input type="hidden" name="country" value="DK" />
+
+        <section class="card form-section">
+          <h2>1. Kontaktperson <span class="required-badge">Mollie: owner</span></h2>
+          <p class="section-hint">Den person der er ansvarlig for virksomheden og Mollie-kontoen.</p>
+          <div class="form-grid">
+            <div class="full-width">
+              <label for="merchantId">Internt merchant-ID</label>
+              <div class="input-row">
+                <input id="merchantId" name="merchantId" type="text" placeholder="Genereres automatisk hvis tomt" />
+                <button type="button" id="generate-id" class="btn btn-secondary">Generér</button>
+              </div>
+            </div>
+            <div>
+              <label for="givenName">Fornavn *</label>
+              <input id="givenName" name="givenName" type="text" required placeholder="Lars" />
+            </div>
+            <div>
+              <label for="familyName">Efternavn *</label>
+              <input id="familyName" name="familyName" type="text" required placeholder="Nielsen" />
+            </div>
+            <div class="full-width">
+              <label for="email">E-mail *</label>
+              <input id="email" name="email" type="email" required placeholder="ejer@restaurant.dk" />
+            </div>
+            <div>
+              <label for="locale">Sprog</label>
+              <select id="locale" name="locale">
+                <option value="da_DK" selected>Dansk</option>
+                <option value="en_GB">Engelsk (UK)</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section">
+          <h2>2. Virksomhed <span class="required-badge">Mollie: organization</span></h2>
+          <div class="form-grid">
+            <div class="full-width">
+              <label for="organizationName">Virksomhedsnavn *</label>
+              <input id="organizationName" name="organizationName" type="text" required placeholder="Restaurant Sørensen ApS" />
+            </div>
+            <div>
+              <label for="legalEntity">Selskabsform *</label>
+              <select id="legalEntity" name="legalEntity" required>
+                <option value="">Vælg selskabsform</option>
+              </select>
+            </div>
+            <div>
+              <label for="registrationNumber">CVR-nummer *</label>
+              <input id="registrationNumber" name="registrationNumber" type="text" required placeholder="12345678" maxlength="8" pattern="[0-9]{8}" title="8 cifre" />
+            </div>
+            <div>
+              <label for="vatNumber">Momsregistreringsnummer</label>
+              <input id="vatNumber" name="vatNumber" type="text" placeholder="DK12345678" pattern="DK[0-9]{8}" title="Format: DK12345678 (valgfrit)" />
+              <span class="field-hint">Kun hvis virksomheden er momsregistreret</span>
+            </div>
+            <div>
+              <label for="incorporationDate">Stiftelsesdato</label>
+              <input id="incorporationDate" name="incorporationDate" type="date" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section">
+          <h2>3. Virksomhedsadresse <span class="required-badge">Mollie: address</span></h2>
+          <div class="form-grid">
+            <div class="full-width">
+              <label for="streetAndNumber">Adresse *</label>
+              <input id="streetAndNumber" name="streetAndNumber" type="text" required placeholder="Nørregade 10" />
+            </div>
+            <div>
+              <label for="postalCode">Postnummer *</label>
+              <input id="postalCode" name="postalCode" type="text" required placeholder="2100" maxlength="4" pattern="[0-9]{4}" />
+            </div>
+            <div>
+              <label for="city">By *</label>
+              <input id="city" name="city" type="text" required placeholder="København" />
+            </div>
+            <div>
+              <label for="countryDisplay">Land</label>
+              <input id="countryDisplay" type="text" value="Danmark (DK)" readonly />
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section">
+          <h2>4. Betalingsprofil <span class="required-badge">Mollie: profile</span></h2>
+          <p class="section-hint">Website og kontaktoplysninger for restaurantens betalingsside hos Mollie.</p>
+          <div class="form-grid">
+            <div class="full-width">
+              <label for="website">Website URL *</label>
+              <input id="website" name="website" type="url" required placeholder="https://restaurant-soerensen.dk" />
+            </div>
+            <div>
+              <label for="phone">Telefon *</label>
+              <input id="phone" name="phone" type="tel" required placeholder="+45 12 34 56 78" />
+            </div>
+            <div>
+              <label for="profileEmail">Kontakt e-mail (profil) *</label>
+              <input id="profileEmail" name="profileEmail" type="email" required placeholder="betaling@restaurant.dk" />
+              <span class="field-hint">Udfyldes automatisk fra ejer e-mail</span>
+            </div>
+            <div class="full-width">
+              <label for="businessDescription">Beskrivelse af forretning</label>
+              <input id="businessDescription" name="businessDescription" type="text" maxlength="500" placeholder="Takeaway restaurant med online bestilling" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section">
+          <h2>5. Identitet (KYC) <span class="required-badge">Lokal + Mollie</span></h2>
+          <p class="section-hint">
+            Vi gemmer oplysningerne og dokumentet lokalt til forudvalidering. Merchant skal stadig bekræfte identitet hos Mollie.
+          </p>
+          <div class="form-grid">
+            <div>
+              <label for="identityDocumentType">Dokumenttype *</label>
+              <select id="identityDocumentType" name="identityDocumentType" required>
+                <option value="passport">Pas</option>
+                <option value="national_id">Sygesikringskort / nationalt ID</option>
+                <option value="drivers_license">Kørekort</option>
+              </select>
+            </div>
+            <div>
+              <label for="identityDocumentNumber">Dokumentnummer *</label>
+              <input id="identityDocumentNumber" name="identityDocumentNumber" type="text" required placeholder="AB1234567" />
+            </div>
+            <div>
+              <label for="identityIssuingCountry">Udstedelsesland *</label>
+              <input id="identityIssuingCountry" name="identityIssuingCountry" type="text" required value="DK" maxlength="2" pattern="[A-Z]{2}" />
+            </div>
+            <div>
+              <label for="identityNationality">Nationalitet *</label>
+              <input id="identityNationality" name="identityNationality" type="text" required value="DK" maxlength="2" pattern="[A-Z]{2}" />
+            </div>
+            <div>
+              <label for="identityDateOfBirth">Fødselsdato *</label>
+              <input id="identityDateOfBirth" name="identityDateOfBirth" type="date" required />
+            </div>
+            <div>
+              <label for="identityExpiryDate">Udløbsdato *</label>
+              <input id="identityExpiryDate" name="identityExpiryDate" type="date" required />
+            </div>
+            <div>
+              <label for="idDocumentFront">Upload dokument (forside) *</label>
+              <input id="idDocumentFront" name="idDocumentFront" type="file" accept="image/jpeg,image/png,application/pdf" required />
+              <span class="field-hint">JPEG, PNG eller PDF — max 5 MB</span>
+            </div>
+            <div>
+              <label for="idDocumentBack">Upload dokument (bagside)</label>
+              <input id="idDocumentBack" name="idDocumentBack" type="file" accept="image/jpeg,image/png,application/pdf" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section">
+          <h2>6. Reelle ejere (UBO) <span class="required-badge">Lokal + Mollie</span></h2>
+          <p class="section-hint">
+            Angiv alle personer med ≥25% ejerskab, eller markér pseudo-UBO for direktører uden ≥25% ejerskab.
+          </p>
+          <div id="ubo-list" class="ubo-list"></div>
+          <button type="button" id="add-ubo-btn" class="btn btn-secondary btn-sm">+ Tilføj UBO</button>
+        </section>
+
+        <section class="card form-section">
+          <h2>7. Bankkonto til udbetalinger <span class="required-badge">Lokal + Mollie</span></h2>
+          <p class="section-hint">IBAN valideres lokalt. Merchant skal tilføje samme konto hos Mollie for udbetalinger.</p>
+          <div class="form-grid">
+            <div class="full-width">
+              <label for="bankAccountHolder">Kontoindehaver *</label>
+              <input id="bankAccountHolder" name="bankAccountHolder" type="text" required placeholder="Restaurant Sørensen ApS" />
+            </div>
+            <div>
+              <label for="bankIban">IBAN *</label>
+              <input id="bankIban" name="bankIban" type="text" required placeholder="DK50 0040 0440 1162 43" />
+            </div>
+            <div>
+              <label for="bankBic">BIC/SWIFT</label>
+              <input id="bankBic" name="bankBic" type="text" placeholder="NDEADKKK" />
+              <span class="field-hint">Valgfrit for danske konti</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card form-section muted-section">
+          <h2>8. Bekræftelse hos Mollie</h2>
+          <p class="section-hint">
+            Efter du sender formularen, omdirigeres merchanten til Mollie. Identitet, UBO og bank skal bekræftes i Mollie-dashboardet — vi viser præcise links på merchant-oversigten.
+          </p>
+        </section>
+
+        <div class="payment-methods-preview card">
+          <h3>Danske betalingsmetoder efter godkendelse</h3>
+          <div class="method-chips" id="methods-preview"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="submit-btn" class="btn btn-primary">Send til Mollie og start onboarding</button>
+          <a href="/merchants.html">Se merchant oversigt →</a>
+        </div>
+      </form>
+    </div>
+
+    <script type="module" src="/js/onboarding.js"></script>
+  </body>
+</html>
