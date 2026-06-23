@@ -1,6 +1,7 @@
 import { apiRequest, apiUploadForm, saveMerchantRecord, showAlert, clearAlert } from './api.js';
 import { DK_COUNTRY, DK_LOCALE, DK_PAYMENT_METHODS } from './dk-config.js';
 import { initCvrLookup } from './cvr-lookup.js';
+import { initBankValidation } from './bank-validation.js';
 
 const form = document.getElementById('onboarding-form');
 const alertBox = document.getElementById('alert');
@@ -363,4 +364,10 @@ initCvrLookup({
   suggestionsList: cvrSuggestionsList,
   statusEl: cvrStatusEl,
   onCompanyLoaded: applyCvrCompany,
+});
+
+initBankValidation({
+  ibanInput: document.getElementById('bankIban'),
+  bicInput: document.getElementById('bankBic'),
+  statusEl: document.getElementById('bank-status'),
 });

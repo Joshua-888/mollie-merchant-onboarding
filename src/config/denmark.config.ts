@@ -70,6 +70,19 @@ export const DENMARK_LEGAL_ENTITY_VALUES = DENMARK_LEGAL_ENTITIES.map((e) => e.v
 export const CVR_PATTERN = /^[0-9]{8}$/;
 export const DANISH_VAT_PATTERN = /^DK[0-9]{8}$/;
 
+/** Common Danish bank registration numbers (IBAN positions 5–8) → BIC. */
+export const DENMARK_BANK_BIC_MAP: Record<string, string> = {
+  '0040': 'NDEADKKK', // Nordea
+  '3000': 'DABADKKK', // Danske Bank
+  '3001': 'DABADKKK',
+  '3200': 'DABADKKK',
+  '5050': 'NYKBDKKK', // Nykredit
+  '5400': 'JYBADKKK', // Jyske Bank
+  '9070': 'JYSKDK22', // Jyske Bank (alternate)
+  '7610': 'SYBKDK22', // Sydbank
+  '8079': 'SPNODK22', // Spar Nord
+};
+
 /** Fields required by Mollie for merchant approval — used for form + validation. */
 export const MOLLIE_ONBOARDING_FIELD_GROUPS = {
   owner: {

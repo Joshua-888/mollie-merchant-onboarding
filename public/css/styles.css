@@ -500,6 +500,21 @@ input[readonly] {
   background: rgba(139, 156, 179, 0.12);
 }
 
+.bank-status {
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+input.input-valid {
+  border-color: var(--success);
+}
+
+input.input-invalid {
+  border-color: var(--error);
+}
+
 .merchant-picker {
   display: flex;
   gap: 0.75rem;

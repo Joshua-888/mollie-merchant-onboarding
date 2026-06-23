@@ -226,7 +226,8 @@
 
         <section class="card form-section">
           <h2>7. Bankkonto til udbetalinger <span class="required-badge">Lokal + Mollie</span></h2>
-          <p class="section-hint">IBAN valideres lokalt. Merchant skal tilføje samme konto hos Mollie for udbetalinger.</p>
+          <p class="section-hint">IBAN og BIC/SWIFT valideres automatisk. Merchant skal tilføje samme konto hos Mollie for udbetalinger.</p>
+          <div id="bank-status" class="bank-status hidden" aria-live="polite"></div>
           <div class="form-grid">
             <div class="full-width">
               <label for="bankAccountHolder">Kontoindehaver *</label>

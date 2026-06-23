@@ -1,5 +1,6 @@
 import { LocalKycDto } from './dto/kyc.dto';
-import { isValidIban, normalizeIban, validateLocalKyc } from './kyc-validation';
+import { isValidIbanChecksum, normalizeIban } from '../bank/bank-validation';
+import { validateLocalKyc } from './kyc-validation';
 
 describe('kyc-validation', () => {
   const validKyc: LocalKycDto = {
@@ -33,7 +34,7 @@ describe('kyc-validation', () => {
   });
 
   it('validates a known Danish IBAN', () => {
-    expect(isValidIban('DK5000400440116243')).toBe(true);
+    expect(isValidIbanChecksum('DK5000400440116243')).toBe(true);
   });
 
   it('accepts valid local KYC payload', () => {

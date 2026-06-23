@@ -1,4 +1,7 @@
 import { LocalKycDto, UboPersonDto } from './dto/kyc.dto';
+import { isValidIbanChecksum, normalizeIban } from '../bank/bank-validation';
+
+export { normalizeIban } from '../bank/bank-validation';
 
 export interface KycValidationResult {
   valid: boolean;
@@ -8,28 +11,6 @@ export interface KycValidationResult {
 
 const MIN_AGE_YEARS = 18;
 const UBO_THRESHOLD_PERCENT = 25;
-
-export function normalizeIban(iban: string): string {
-  return iban.replace(/\s/g, '').toUpperCase();
-}
-
-export function isValidIban(iban: string): boolean {
-  const normalized = normalizeIban(iban);
-  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(normalized)) {
-    return false;
-  }
-
-  const rearranged = normalized.slice(4) + normalized.slice(0, 4);
-  const numeric = rearranged.replace(/[A-Z]/g, (char) => String(char.charCodeAt(0) - 55));
-
-  let remainder = numeric;
-  while (remainder.length > 2) {
-    const block = remainder.slice(0, 9);
-    remainder = String(parseInt(block, 10) % 97) + remainder.slice(block.length);
-  }
-
-  return parseInt(remainder, 10) % 97 === 1;
-}
 
 function ageInYears(dateOfBirth: string, referenceDate = new Date()): number {
   const birth = new Date(dateOfBirth);
@@ -89,7 +70,7 @@ export function validateLocalKyc(
   }
 
   const iban = normalizeIban(localKyc.bankAccount.iban);
-  if (!isValidIban(iban)) {
+  if (!isValidIbanChecksum(iban)) {
     errors.push('IBAN er ugyldigt (kontroller nummer og format)');
   }
 
