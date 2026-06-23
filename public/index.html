@@ -28,8 +28,9 @@
       <div class="card info-panel">
         <h2>Sådan fungerer onboarding</h2>
         <ul class="info-list">
-          <li><strong>Trin 1–4 + KYC:</strong> indsamles her til Takeawayhero-registrering og forudvalidering</li>
-          <li><strong>Hos Mollie bagefter:</strong> merchant bekræfter identitet, UBO og bankkonto i Mollie-dashboardet (kan ikke sendes via API)</li>
+          <li><strong>Trin 1–4:</strong> virksomheds- og betalingsdata til Mollie onboarding</li>
+          <li><strong>Trin 5–6:</strong> UBO og bank valideres lokalt til forudtjek</li>
+          <li><strong>Hos Mollie bagefter:</strong> merchant uploader ID og bekræfter identitet, UBO og bank — vi gemmer ikke ID-dokumenter</li>
         </ul>
       </div>
 
@@ -169,50 +170,12 @@
           </div>
         </section>
 
-        <section class="card form-section">
-          <h2>5. Identitet (KYC) <span class="required-badge">Lokal + Mollie</span></h2>
+        <section class="card form-section muted-section">
+          <h2>5. Identitet (KYC) <span class="required-badge">Kun Mollie</span></h2>
           <p class="section-hint">
-            Vi gemmer oplysningerne og dokumentet lokalt til forudvalidering. Merchant skal stadig bekræfte identitet hos Mollie.
+            Af sikkerheds- og compliance-hensyn indsamler og gemmer vi <strong>ikke</strong> ID-dokumenter eller pasnumre.
+            Merchant uploades og verificerer identitet direkte i Mollie-dashboardet efter onboarding.
           </p>
-          <div class="form-grid">
-            <div>
-              <label for="identityDocumentType">Dokumenttype *</label>
-              <select id="identityDocumentType" name="identityDocumentType" required>
-                <option value="passport">Pas</option>
-                <option value="national_id">Sygesikringskort / nationalt ID</option>
-                <option value="drivers_license">Kørekort</option>
-              </select>
-            </div>
-            <div>
-              <label for="identityDocumentNumber">Dokumentnummer *</label>
-              <input id="identityDocumentNumber" name="identityDocumentNumber" type="text" required placeholder="AB1234567" />
-            </div>
-            <div>
-              <label for="identityIssuingCountry">Udstedelsesland *</label>
-              <input id="identityIssuingCountry" name="identityIssuingCountry" type="text" required value="DK" maxlength="2" pattern="[A-Z]{2}" />
-            </div>
-            <div>
-              <label for="identityNationality">Nationalitet *</label>
-              <input id="identityNationality" name="identityNationality" type="text" required value="DK" maxlength="2" pattern="[A-Z]{2}" />
-            </div>
-            <div>
-              <label for="identityDateOfBirth">Fødselsdato *</label>
-              <input id="identityDateOfBirth" name="identityDateOfBirth" type="date" required />
-            </div>
-            <div>
-              <label for="identityExpiryDate">Udløbsdato *</label>
-              <input id="identityExpiryDate" name="identityExpiryDate" type="date" required />
-            </div>
-            <div>
-              <label for="idDocumentFront">Upload dokument (forside) *</label>
-              <input id="idDocumentFront" name="idDocumentFront" type="file" accept="image/jpeg,image/png,application/pdf" required />
-              <span class="field-hint">JPEG, PNG eller PDF — max 5 MB</span>
-            </div>
-            <div>
-              <label for="idDocumentBack">Upload dokument (bagside)</label>
-              <input id="idDocumentBack" name="idDocumentBack" type="file" accept="image/jpeg,image/png,application/pdf" />
-            </div>
-          </div>
         </section>
 
         <section class="card form-section">
@@ -248,7 +211,7 @@
         <section class="card form-section muted-section">
           <h2>8. Bekræftelse hos Mollie</h2>
           <p class="section-hint">
-            Efter du sender formularen, omdirigeres merchanten til Mollie. Identitet, UBO og bank skal bekræftes i Mollie-dashboardet — vi viser præcise links på merchant-oversigten.
+            Efter du sender formularen, omdirigeres merchanten til Mollie. Identitet (med ID-upload), UBO og bank skal bekræftes i Mollie-dashboardet — vi viser præcise links på merchant-oversigten.
           </p>
         </section>
 

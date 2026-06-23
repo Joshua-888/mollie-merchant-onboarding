@@ -29,7 +29,6 @@ import { MerchantListItem } from '../merchants/merchant-flow';
 import { MerchantTokenStore } from '../merchants/merchant-token.store';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
-import { KycDocumentStorage } from './kyc-document.storage';
 import {
   MerchantLocalKycSnapshot,
   normalizeIban,
@@ -45,7 +44,6 @@ export class OnboardingService {
     private readonly mollieClient: MollieClient,
     private readonly tokenStore: MerchantTokenStore,
     private readonly merchantRegistry: MerchantRegistry,
-    private readonly kycDocumentStorage: KycDocumentStorage,
     private readonly configService: ConfigService<AppConfig, true>,
   ) {
     this.mollieConfig = this.configService.get('mollie', { infer: true });
@@ -274,43 +272,6 @@ export class OnboardingService {
     return this.merchantRegistry.listAllWithFlow();
   }
 
-  async uploadKycDocuments(
-    merchantId: string,
-    files: {
-      idDocumentFront?: Express.Multer.File[];
-      idDocumentBack?: Express.Multer.File[];
-    },
-  ): Promise<{ merchantId: string; documentsUploaded: boolean }> {
-    const record = this.merchantRegistry.get(merchantId);
-    if (!record) {
-      throw new NotFoundException(`Merchant not found: ${merchantId}`);
-    }
-
-    const saved: { front?: string; back?: string } = {};
-
-    if (files.idDocumentFront?.[0]) {
-      const doc = this.kycDocumentStorage.save(merchantId, 'front', files.idDocumentFront[0]);
-      saved.front = doc.storedName;
-    }
-
-    if (files.idDocumentBack?.[0]) {
-      const doc = this.kycDocumentStorage.save(merchantId, 'back', files.idDocumentBack[0]);
-      saved.back = doc.storedName;
-    }
-
-    if (!saved.front && !saved.back) {
-      throw new BadRequestException('Mindst ét identitetsdokument skal uploades');
-    }
-
-    this.merchantRegistry.updateKycDocuments(merchantId, saved);
-    const updated = this.merchantRegistry.get(merchantId);
-
-    return {
-      merchantId,
-      documentsUploaded: Boolean(updated?.localKyc?.documentsUploaded),
-    };
-  }
-
   getDanishPaymentMethods() {
     return DENMARK_PAYMENT_METHODS;
   }
@@ -332,7 +293,6 @@ export class OnboardingService {
     validation: ReturnType<typeof validateLocalKyc>,
   ): MerchantLocalKycSnapshot {
     return {
-      identity: dto.localKyc.identity,
       ubos: dto.localKyc.ubos,
       bankAccount: {
         ...dto.localKyc.bankAccount,
@@ -342,7 +302,6 @@ export class OnboardingService {
       validationPassed: validation.valid,
       validationErrors: validation.errors,
       validationWarnings: validation.warnings,
-      documentsUploaded: false,
       collectedAt: new Date(),
     };
   }

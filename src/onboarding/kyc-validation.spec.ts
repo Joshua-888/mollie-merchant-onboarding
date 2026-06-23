@@ -4,14 +4,6 @@ import { validateLocalKyc } from './kyc-validation';
 
 describe('kyc-validation', () => {
   const validKyc: LocalKycDto = {
-    identity: {
-      documentType: 'passport',
-      documentNumber: 'AB1234567',
-      issuingCountry: 'DK',
-      dateOfBirth: '1985-06-15',
-      nationality: 'DK',
-      expiryDate: '2030-01-01',
-    },
     ubos: [
       {
         givenName: 'Lars',
@@ -41,15 +33,6 @@ describe('kyc-validation', () => {
     const result = validateLocalKyc(validKyc);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
-  });
-
-  it('rejects expired identity document', () => {
-    const result = validateLocalKyc({
-      ...validKyc,
-      identity: { ...validKyc.identity, expiryDate: '2020-01-01' },
-    });
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Identitetsdokumentet er udløbet');
   });
 
   it('requires a major owner or pseudo-UBO', () => {

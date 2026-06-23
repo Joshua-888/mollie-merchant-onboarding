@@ -9,10 +9,7 @@ import {
   Post,
   Query,
   Redirect,
-  UploadedFiles,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
 import { OnboardingService } from './onboarding.service';
@@ -181,25 +178,6 @@ export class OnboardingController {
   async syncMerchant(@Param('merchantId') merchantId: string) {
     const merchant = await this.onboardingService.syncMerchant(merchantId);
     return { merchant };
-  }
-
-  @Post('merchants/:merchantId/kyc-documents')
-  @HttpCode(HttpStatus.OK)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'idDocumentFront', maxCount: 1 },
-      { name: 'idDocumentBack', maxCount: 1 },
-    ]),
-  )
-  async uploadKycDocuments(
-    @Param('merchantId') merchantId: string,
-    @UploadedFiles()
-    files: {
-      idDocumentFront?: Express.Multer.File[];
-      idDocumentBack?: Express.Multer.File[];
-    },
-  ) {
-    return this.onboardingService.uploadKycDocuments(merchantId, files);
   }
 
   /**

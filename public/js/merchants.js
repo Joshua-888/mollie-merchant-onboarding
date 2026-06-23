@@ -95,7 +95,6 @@ function renderLocalKycSummary(merchant) {
       <h4>Lokal KYC indsamlet</h4>
       <p class="local-kyc-meta">
         <span class="badge ${summary.validationPassed ? 'badge-yes' : 'badge-no'}">${summary.validationPassed ? 'Valideret' : 'Validering fejlede'}</span>
-        <span class="badge ${summary.documentsUploaded ? 'badge-yes' : 'badge-no'}">${summary.documentsUploaded ? 'Dokument uploadet' : 'Mangler dokument'}</span>
       </p>
       <p class="local-kyc-note">Skal bekræftes hos Mollie: ${escapeHtml(pending || '—')}</p>
     </div>`;

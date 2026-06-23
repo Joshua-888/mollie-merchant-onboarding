@@ -73,15 +73,6 @@ function maskIban(iban) {
   return `${iban.slice(0, 4)} **** **** ${iban.slice(-4)}`;
 }
 
-function documentTypeLabel(type) {
-  const labels = {
-    passport: 'Pas',
-    national_id: 'Nationalt ID',
-    drivers_license: 'Kørekort',
-  };
-  return labels[type] ?? type;
-}
-
 function renderLocalKyc(merchant) {
   const container = document.getElementById('local-kyc-content');
   const kyc = merchant?.localKyc;
@@ -100,16 +91,20 @@ function renderLocalKyc(merchant) {
     )
     .join('');
 
+  const pendingLabels = {
+    identity: 'Identitet (hos Mollie)',
+    ubo: 'UBO',
+    bank: 'Bankkonto',
+  };
+  const pending = (summary?.pendingMollieConfirmation ?? [])
+    .map((key) => pendingLabels[key] ?? key)
+    .join(', ');
+
   container.innerHTML = `
     <div class="local-kyc-meta" style="margin-bottom: 1rem">
       <span class="badge ${summary?.validationPassed ? 'badge-yes' : 'badge-no'}">${summary?.validationPassed ? 'Valideret' : 'Validering fejlede'}</span>
-      <span class="badge ${summary?.documentsUploaded ? 'badge-yes' : 'badge-no'}">${summary?.documentsUploaded ? 'Dokument uploadet' : 'Mangler dokument'}</span>
     </div>
     <div class="status-grid">
-      <div class="stat">
-        <div class="stat-label">Identitet</div>
-        <div class="stat-value">${escapeHtml(documentTypeLabel(kyc.identity.documentType))} · ${escapeHtml(kyc.identity.documentNumber)}</div>
-      </div>
       <div class="stat">
         <div class="stat-label">Bankkonto</div>
         <div class="stat-value">${escapeHtml(kyc.bankAccount.accountHolderName)}<br /><code>${escapeHtml(maskIban(kyc.bankAccount.iban))}</code></div>
@@ -117,6 +112,7 @@ function renderLocalKyc(merchant) {
     </div>
     <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem">UBO'er</h3>
     <ul class="info-list compact">${uboRows || '<li>Ingen UBO registreret</li>'}</ul>
+    <p class="local-kyc-note">Bekræftes hos Mollie: ${escapeHtml(pending || '—')}</p>
     ${
       summary?.validationWarnings?.length
         ? `<p class="local-kyc-note">Advarsler: ${escapeHtml(summary.validationWarnings.join('; '))}</p>`

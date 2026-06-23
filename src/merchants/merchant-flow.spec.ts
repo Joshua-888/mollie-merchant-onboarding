@@ -85,14 +85,6 @@ describe('merchant-flow', () => {
       ...baseRecord,
       connected: true,
       localKyc: {
-        identity: {
-          documentType: 'passport',
-          documentNumber: 'AB1234567',
-          issuingCountry: 'DK',
-          dateOfBirth: '1985-06-15',
-          nationality: 'DK',
-          expiryDate: '2030-01-01',
-        },
         ubos: [
           {
             givenName: 'Lars',
@@ -110,7 +102,6 @@ describe('merchant-flow', () => {
         validationPassed: true,
         validationErrors: [],
         validationWarnings: [],
-        documentsUploaded: true,
         collectedAt: new Date(),
       },
       capabilityRequirements: [

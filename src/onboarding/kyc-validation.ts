@@ -62,13 +62,6 @@ export function validateLocalKyc(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  validateMinimumAge(localKyc.identity.dateOfBirth, 'Identitetsindehaver', errors);
-
-  const expiry = new Date(localKyc.identity.expiryDate);
-  if (expiry <= new Date()) {
-    errors.push('Identitetsdokumentet er udløbet');
-  }
-
   const iban = normalizeIban(localKyc.bankAccount.iban);
   if (!isValidIbanChecksum(iban)) {
     errors.push('IBAN er ugyldigt (kontroller nummer og format)');
@@ -98,7 +91,6 @@ export function validateLocalKyc(
 export interface LocalKycSummary {
   collected: boolean;
   validationPassed: boolean;
-  documentsUploaded: boolean;
   pendingMollieConfirmation: Array<'identity' | 'ubo' | 'bank'>;
   validationWarnings: string[];
 }
@@ -110,28 +102,23 @@ export function buildLocalKycSummary(
     return undefined;
   }
 
-  const pending: LocalKycSummary['pendingMollieConfirmation'] = [];
-  if (localKyc.identity) pending.push('identity');
+  const pending: LocalKycSummary['pendingMollieConfirmation'] = ['identity'];
   if (localKyc.ubos?.length) pending.push('ubo');
   if (localKyc.bankAccount) pending.push('bank');
 
   return {
     collected: true,
     validationPassed: localKyc.validationPassed,
-    documentsUploaded: localKyc.documentsUploaded,
     pendingMollieConfirmation: pending,
     validationWarnings: localKyc.validationWarnings,
   };
 }
 
 export interface MerchantLocalKycSnapshot {
-  identity: LocalKycDto['identity'];
   ubos: LocalKycDto['ubos'];
   bankAccount: LocalKycDto['bankAccount'];
   validationPassed: boolean;
   validationErrors: string[];
   validationWarnings: string[];
-  documentsUploaded: boolean;
-  documentFiles?: { front?: string; back?: string };
   collectedAt: Date;
 }

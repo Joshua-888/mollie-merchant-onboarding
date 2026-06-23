@@ -130,10 +130,7 @@ export function computeMissingItems(
   return [...new Set(items)];
 }
 
-const REQUIREMENT_LOCAL_KYC_MAP: Record<string, keyof Pick<MerchantLocalKycSnapshot, 'identity' | 'ubos' | 'bankAccount'>> = {
-  'upload-identification': 'identity',
-  'upload-id-document': 'identity',
-  'verify-identity': 'identity',
+const REQUIREMENT_LOCAL_KYC_MAP: Record<string, keyof Pick<MerchantLocalKycSnapshot, 'ubos' | 'bankAccount'>> = {
   'provide-stakeholder-information': 'ubos',
   'provide-stakeholders': 'ubos',
   'provide-ultimate-beneficial-owner': 'ubos',

@@ -130,17 +130,17 @@ export const MOLLIE_ONBOARDING_FIELD_GROUPS = {
   mollieWizard: {
     title: 'Bekræftes hos Mollie efter godkendelse',
     mollieApi: 'dashboard',
-    note: 'Oplysninger indsamles lokalt til forudvalidering, men identitet, UBO og bank skal stadig bekræftes i Mollie.',
+    note: 'Identitet verificeres kun i Mollie — vi gemmer ikke ID-dokumenter.',
     fields: [
-      { key: 'bankAccount', label: 'Bankkonto til udbetalinger', required: true, mollieField: 'settlements' },
       { key: 'identity', label: 'Identitetsverificering (KYC)', required: true, mollieField: 'kyc' },
+      { key: 'bankAccount', label: 'Bankkonto til udbetalinger', required: true, mollieField: 'settlements' },
       { key: 'ubo', label: 'Reelle ejere (UBO)', required: true, mollieField: 'ubo' },
     ],
   },
   localKyc: {
     title: 'Indsamles i Takeawayhero-formularen',
+    note: 'UBO og bank valideres lokalt. Identitet og ID-dokument håndteres udelukkende hos Mollie.',
     fields: [
-      { key: 'identity', label: 'Identitetsdokument (metadata + fil)', required: true },
       { key: 'ubo', label: 'Reelle ejere (UBO)', required: true },
       { key: 'bankAccount', label: 'Bankkonto (IBAN)', required: true },
     ],

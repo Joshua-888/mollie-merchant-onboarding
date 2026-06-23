@@ -6,7 +6,6 @@ import { MerchantTokenStore } from '../merchants/merchant-token.store';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
 import { LocalKycDto } from './dto/kyc.dto';
 import { OnboardingService } from './onboarding.service';
-import { KycDocumentStorage } from './kyc-document.storage';
 
 const mockMollieClient = {
   createClientLink: jest.fn(),
@@ -30,17 +29,12 @@ const mockTokenStore = {
   delete: jest.fn(),
 };
 
-const mockKycDocumentStorage = {
-  save: jest.fn(),
-};
-
 const mockMerchantRegistry = {
   registerFromInitiate: jest.fn(),
   markConnected: jest.fn(),
   updateMollieStatus: jest.fn(),
   updateCapabilities: jest.fn(),
   updateProfileCount: jest.fn(),
-  updateKycDocuments: jest.fn(),
   get: jest.fn(),
   getOrThrow: jest.fn(),
   listAll: jest.fn().mockReturnValue([]),
@@ -49,14 +43,6 @@ const mockMerchantRegistry = {
 };
 
 const validLocalKyc: LocalKycDto = {
-  identity: {
-    documentType: 'passport',
-    documentNumber: 'AB1234567',
-    issuingCountry: 'DK',
-    dateOfBirth: '1985-06-15',
-    nationality: 'DK',
-    expiryDate: '2030-01-01',
-  },
   ubos: [
     {
       givenName: 'Lars',
@@ -96,7 +82,6 @@ describe('OnboardingService', () => {
         { provide: MollieClient, useValue: mockMollieClient },
         { provide: MerchantTokenStore, useValue: mockTokenStore },
         { provide: MerchantRegistry, useValue: mockMerchantRegistry },
-        { provide: KycDocumentStorage, useValue: mockKycDocumentStorage },
         { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();

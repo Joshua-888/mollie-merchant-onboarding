@@ -1,4 +1,4 @@
-import { apiRequest, apiUploadForm, saveMerchantRecord, showAlert, clearAlert } from './api.js';
+import { apiRequest, saveMerchantRecord, showAlert, clearAlert } from './api.js';
 import { DK_COUNTRY, DK_LOCALE, DK_PAYMENT_METHODS } from './dk-config.js';
 import { initCvrLookup } from './cvr-lookup.js';
 import { initBankValidation } from './bank-validation.js';
@@ -144,13 +144,6 @@ function collectUbos() {
   }));
 }
 
-function syncOwnerToIdentity() {
-  const dobField = document.getElementById('identityDateOfBirth');
-  if (!dobField.value && document.querySelector('.ubo-dob')?.value) {
-    dobField.value = document.querySelector('.ubo-dob').value;
-  }
-}
-
 function syncSoleProprietorUbo() {
   if (legalEntitySelect.value !== 'dk-enkeltmandsvirksomhed') return;
 
@@ -265,8 +258,6 @@ form.addEventListener('submit', async (event) => {
   const formData = new FormData(form);
   const merchantId = formData.get('merchantId')?.toString().trim() || generateMerchantId();
   const vatNumber = formData.get('vatNumber')?.toString().trim();
-  const idFront = document.getElementById('idDocumentFront').files[0];
-  const idBack = document.getElementById('idDocumentBack').files[0];
 
   const payload = {
     merchantId,
@@ -290,14 +281,6 @@ form.addEventListener('submit', async (event) => {
     profileEmail: formData.get('profileEmail') || formData.get('email'),
     businessDescription: formData.get('businessDescription')?.toString().trim() || undefined,
     localKyc: {
-      identity: {
-        documentType: formData.get('identityDocumentType'),
-        documentNumber: formData.get('identityDocumentNumber'),
-        issuingCountry: formData.get('identityIssuingCountry')?.toString().toUpperCase(),
-        dateOfBirth: formData.get('identityDateOfBirth'),
-        nationality: formData.get('identityNationality')?.toString().toUpperCase(),
-        expiryDate: formData.get('identityExpiryDate'),
-      },
       ubos: collectUbos(),
       bankAccount: {
         accountHolderName: formData.get('bankAccountHolder'),
@@ -313,13 +296,6 @@ form.addEventListener('submit', async (event) => {
       body: JSON.stringify(payload),
     });
 
-    if (idFront || idBack) {
-      const uploadData = new FormData();
-      if (idFront) uploadData.append('idDocumentFront', idFront);
-      if (idBack) uploadData.append('idDocumentBack', idBack);
-      await apiUploadForm(`/merchants/${encodeURIComponent(merchantId)}/kyc-documents`, uploadData);
-    }
-
     saveMerchantRecord({
       merchantId,
       email: payload.email,
@@ -332,7 +308,7 @@ form.addEventListener('submit', async (event) => {
 
     showAlert(
       alertBox,
-      'Merchantdata og KYC gemt lokalt. Omdirigerer til Mollie for godkendelse…',
+      'Merchantdata gemt lokalt. Omdirigerer til Mollie for godkendelse…',
       'success',
     );
 
@@ -356,7 +332,6 @@ if (!document.getElementById('merchantId').value) {
 renderMethodsPreview();
 loadLegalEntities();
 addUboRow({ nationality: 'DK', ownershipPercent: 100, role: 'Direktør' });
-syncOwnerToIdentity();
 
 initCvrLookup({
   organizationInput: organizationNameInput,

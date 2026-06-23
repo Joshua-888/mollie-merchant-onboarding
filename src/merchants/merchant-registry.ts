@@ -116,27 +116,6 @@ export class MerchantRegistry {
     this.store.set(merchantId, record);
   }
 
-  updateKycDocuments(
-    merchantId: string,
-    files: { front?: string; back?: string },
-  ): void {
-    const record = this.getOrThrow(merchantId);
-    if (!record.localKyc) {
-      throw new NotFoundException(`Local KYC not found for merchant: ${merchantId}`);
-    }
-
-    record.localKyc.documentFiles = {
-      ...record.localKyc.documentFiles,
-      ...files,
-    };
-    record.localKyc.documentsUploaded = Boolean(
-      record.localKyc.documentFiles.front || record.localKyc.documentFiles.back,
-    );
-    record.updatedAt = new Date();
-    this.store.set(merchantId, record);
-    this.logger.log({ action: 'updateKycDocuments', merchantId });
-  }
-
   get(merchantId: string): MerchantRecord | undefined {
     return this.store.get(merchantId);
   }
