@@ -31,5 +31,8 @@ coverage/
 # Sensitive KYC document uploads (local dev only)
 uploads/
 
+# Local merchant + OAuth token persistence (dev)
+data/
+
 # TypeScript incremental build
 *.tsbuildinfo

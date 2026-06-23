@@ -13,6 +13,26 @@ import {
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { InitiateOnboardingDto } from './dto/initiate-onboarding.dto';
 import { OnboardingService } from './onboarding.service';
+import { MollieError } from '../integrations/mollie/mollie.errors';
+
+function resolveOAuthCallbackError(err: unknown): string {
+  if (err instanceof BadRequestException) {
+    const response = err.getResponse();
+    if (typeof response === 'string') return response;
+    if (response && typeof response === 'object') {
+      const message = (response as { message?: string | string[] }).message;
+      if (Array.isArray(message)) return message.join('; ');
+      if (typeof message === 'string') return message;
+    }
+  }
+  if (err instanceof MollieError) {
+    return err.message;
+  }
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return 'OAuth callback failed.';
+}
 
 @Controller('api/v1/onboarding')
 export class OnboardingController {
@@ -62,16 +82,13 @@ export class OnboardingController {
     try {
       ({ merchantId } = await this.onboardingService.handleOAuthCallback(code, state));
     } catch (err) {
-      const message =
-        err instanceof BadRequestException
-          ? (err.getResponse() as string | { message?: string })
-          : 'OAuth callback failed.';
-      const errorText =
-        typeof message === 'string' ? message : (message.message ?? 'OAuth callback failed.');
       const params = new URLSearchParams({
         error: 'callback_failed',
-        errorDescription: errorText,
+        errorDescription: resolveOAuthCallbackError(err),
       });
+      if (state?.trim()) {
+        params.set('merchantId', state.trim());
+      }
       return { url: `/dashboard.html?${params.toString()}`, statusCode: 302 };
     }
 

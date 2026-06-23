@@ -9,11 +9,37 @@ import {
   recordFromInitiateDto,
   toListItem,
 } from './merchant-flow';
+import { JsonFileStore } from './persistence/json-file.store';
+
+type MerchantStoreSnapshot = Record<string, MerchantRecord>;
 
 @Injectable()
 export class MerchantRegistry {
   private readonly logger = new Logger(MerchantRegistry.name);
   private readonly store = new Map<string, MerchantRecord>();
+  private readonly fileStore = new JsonFileStore<MerchantStoreSnapshot>('merchants.json', {});
+
+  constructor() {
+    this.loadFromDisk();
+  }
+
+  private loadFromDisk(): void {
+    const snapshot = this.fileStore.read();
+    for (const [merchantId, record] of Object.entries(snapshot)) {
+      this.store.set(merchantId, record);
+    }
+    if (this.store.size > 0) {
+      this.logger.log({ action: 'loadFromDisk', merchantCount: this.store.size });
+    }
+  }
+
+  private persist(): void {
+    const snapshot: MerchantStoreSnapshot = {};
+    for (const [merchantId, record] of this.store.entries()) {
+      snapshot[merchantId] = record;
+    }
+    this.fileStore.write(snapshot);
+  }
 
   registerFromInitiate(
     dto: InitiateOnboardingDto,
@@ -41,6 +67,7 @@ export class MerchantRegistry {
     }
 
     this.store.set(dto.merchantId, record);
+    this.persist();
     this.logger.log({ action: 'register', merchantId: dto.merchantId });
     return record;
   }
@@ -71,6 +98,7 @@ export class MerchantRegistry {
     record.connectedAt = now;
     record.updatedAt = now;
     this.store.set(merchantId, record);
+    this.persist();
     this.logger.log({ action: 'markConnected', merchantId });
   }
 
@@ -83,6 +111,7 @@ export class MerchantRegistry {
     record.statusMessage = status.message;
     record.updatedAt = new Date();
     this.store.set(merchantId, record);
+    this.persist();
   }
 
   updateCapabilities(merchantId: string, summary: CapabilitiesSummary): void {
@@ -102,6 +131,7 @@ export class MerchantRegistry {
 
     record.updatedAt = new Date();
     this.store.set(merchantId, record);
+    this.persist();
     this.logger.log({
       action: 'updateCapabilities',
       merchantId,
@@ -114,6 +144,7 @@ export class MerchantRegistry {
     record.profileCount = count;
     record.updatedAt = new Date();
     this.store.set(merchantId, record);
+    this.persist();
   }
 
   get(merchantId: string): MerchantRecord | undefined {

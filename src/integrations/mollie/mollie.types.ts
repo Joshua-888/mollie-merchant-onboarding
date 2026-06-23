@@ -51,10 +51,9 @@ export interface MollieCapabilitiesResponseDto {
 export interface MollieClientLinkResponseDto {
   resource: 'client-link';
   id: string;
-  clientLink: string;
   _links: {
     clientLink: { href: string; type: string };
-    documentation: { href: string; type: string };
+    documentation?: { href: string; type: string };
   };
 }
 

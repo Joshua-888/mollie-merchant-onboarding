@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MollieClient } from '../integrations/mollie/mollie.client';
@@ -94,8 +95,12 @@ describe('OnboardingService', () => {
       mockMollieClient.createClientLink.mockResolvedValue({
         resource: 'client-link',
         id: 'cl_abc123',
-        clientLink: 'https://my.mollie.com/dashboard/client-link/cl_abc123',
-        _links: {},
+        _links: {
+          clientLink: {
+            href: 'https://my.mollie.com/dashboard/client-link/cl_abc123',
+            type: 'text/html',
+          },
+        },
       });
 
       const dto: InitiateOnboardingDto = {
@@ -127,7 +132,38 @@ describe('OnboardingService', () => {
       expect(result.redirectUrl).toContain('onboarding.read');
       expect(result.redirectUrl).toContain('profiles.write');
       expect(result.redirectUrl).toContain('state=dk-merchant-1');
+      expect(result.redirectUrl).toContain('https://my.mollie.com/dashboard/client-link/cl_abc123');
       expect(mockMerchantRegistry.registerFromInitiate).toHaveBeenCalled();
+    });
+
+    it('rejects when Mollie response has no client link URL', async () => {
+      mockMollieClient.createClientLink.mockResolvedValue({
+        resource: 'client-link',
+        id: 'cl_abc123',
+        _links: {},
+      });
+
+      const dto: InitiateOnboardingDto = {
+        merchantId: 'dk-merchant-1',
+        email: 'ejer@restaurant.dk',
+        givenName: 'Lars',
+        familyName: 'Nielsen',
+        organizationName: 'Restaurant Sørensen ApS',
+        legalEntity: 'dk-anpartsselskab',
+        registrationNumber: '12345678',
+        address: {
+          country: 'DK',
+          city: 'København',
+          postalCode: '2100',
+          streetAndNumber: 'Nørregade 10',
+        },
+        website: 'https://restaurant.dk',
+        phone: '+4512345678',
+        profileEmail: 'betaling@restaurant.dk',
+        localKyc: validLocalKyc,
+      };
+
+      await expect(service.initiateOnboarding(dto)).rejects.toThrow(BadRequestException);
     });
   });
 

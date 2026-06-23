@@ -332,7 +332,14 @@ if (params.get('connected') === 'true') {
   showAlert(alertBox, 'Merchant er nu forbundet til Mollie!', 'success');
 }
 
-if (params.get('error')) {
+if (params.get('error') === 'callback_failed') {
+  const detail = params.get('errorDescription') || 'OAuth-forbindelsen fejlede.';
+  showAlert(
+    alertBox,
+    `${detail} Merchanten er sandsynligvis allerede oprettet hos Mollie (tjek e-mail / Mollie-dashboard). Onboarding kan fortsætte der — Takeawayhero synkroniserer status først når OAuth-forbindelsen lykkes.`,
+    'error',
+  );
+} else if (params.get('error')) {
   showAlert(alertBox, params.get('errorDescription') || params.get('error'), 'error');
 }
 

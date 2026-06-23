@@ -13,6 +13,7 @@ import {
   mapOnboardingStatus,
   mapProfile,
   mapTokenResponse,
+  resolveClientLinkHref,
 } from '../integrations/mollie/mollie.mapper';
 import {
   CapabilitiesSummary,
@@ -84,13 +85,20 @@ export class OnboardingService {
 
     const scopes = MOLLIE_OAUTH_SCOPES.join(' ');
 
+    const clientLinkUrl = resolveClientLinkHref(response);
+    if (!clientLinkUrl) {
+      throw new BadRequestException(
+        'Mollie returnerede ikke et client link. Kontroller at access token har clients.write og at API-kaldet lykkedes.',
+      );
+    }
+
     const params = new URLSearchParams({
       client_id: this.mollieConfig.clientId,
       state,
       scope: scopes,
     });
 
-    const redirectUrl = `${response.clientLink}?${params.toString()}`;
+    const redirectUrl = `${clientLinkUrl}?${params.toString()}`;
 
     this.logger.log({
       action: 'initiateOnboarding',

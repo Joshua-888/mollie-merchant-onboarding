@@ -1,4 +1,5 @@
 import {
+  MollieClientLinkResponseDto,
   MollieOnboardingStatusDto,
   MollieProfileResponseDto,
   MollieTokenResponseDto,
@@ -45,6 +46,11 @@ function resolveOnboardingMessage(
     ONBOARDING_STATUS_MESSAGES[status]?.[payments]?.[settlements] ??
     'Onboarding er i gang.'
   );
+}
+
+/** Mollie returns the authorize URL in `_links.clientLink.href`, not as a top-level field. */
+export function resolveClientLinkHref(dto: MollieClientLinkResponseDto): string | undefined {
+  return dto._links?.clientLink?.href;
 }
 
 export function mapTokenResponse(dto: MollieTokenResponseDto): OAuthTokens {

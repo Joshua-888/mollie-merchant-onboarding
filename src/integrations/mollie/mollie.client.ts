@@ -104,11 +104,18 @@ export class MollieClient {
 
       return response.data;
     } catch (error) {
+      const detail = axios.isAxiosError(error)
+        ? (error.response?.data as { detail?: string } | undefined)?.detail ?? error.message
+        : error instanceof Error
+          ? error.message
+          : 'Unknown error';
       this.logger.error({
         system: 'mollie',
         operation: 'exchangeAuthCode',
         durationMs: Date.now() - start,
         status: 'error',
+        detail,
+        httpStatus: axios.isAxiosError(error) ? error.response?.status : undefined,
       });
       throw this.wrapError(error);
     }
