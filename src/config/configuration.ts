@@ -14,6 +14,10 @@ export type MollieApiMode = 'test' | 'live';
 export interface AppConfig {
   port: number;
   nodeEnv: string;
+  cvr: {
+    baseUrl: string;
+    apiKey?: string;
+  };
   mollie: {
     clientId: string;
     clientSecret: string;
@@ -52,6 +56,10 @@ export default (): AppConfig => {
   return {
     port: parseInt(process.env.PORT ?? '3000', 10),
     nodeEnv,
+    cvr: {
+      baseUrl: process.env.CVR_API_BASE_URL ?? 'https://datacvrapi.dk/api/v2',
+      apiKey: process.env.CVR_API_KEY || undefined,
+    },
     mollie: {
       clientId: process.env.MOLLIE_CLIENT_ID!,
       clientSecret: process.env.MOLLIE_CLIENT_SECRET!,

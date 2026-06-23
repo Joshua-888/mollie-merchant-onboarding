@@ -15,6 +15,7 @@ import {
   MollieRateLimitError,
   MollieValidationError,
 } from '../../integrations/mollie/mollie.errors';
+import { CvrError } from '../../integrations/cvr/cvr.errors';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -61,6 +62,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
     if (exception instanceof MollieError) {
       return { statusCode: HttpStatus.BAD_GATEWAY, message: 'Payment provider error' };
+    }
+    if (exception instanceof CvrError) {
+      return { statusCode: exception.statusCode, message: exception.message };
     }
     if (exception instanceof HttpException) {
       return { statusCode: exception.getStatus(), message: exception.message };

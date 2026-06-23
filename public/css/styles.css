@@ -421,6 +421,85 @@ input[readonly] {
   flex: 1;
 }
 
+.cvr-combobox {
+  position: relative;
+}
+
+.cvr-suggestions {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.cvr-suggestion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.cvr-suggestion:last-child {
+  border-bottom: none;
+}
+
+.cvr-suggestion:hover,
+.cvr-suggestion:focus {
+  background: var(--surface-hover);
+  outline: none;
+}
+
+.cvr-suggestion-name {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.cvr-suggestion-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cvr-status {
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.cvr-status-loading {
+  color: var(--text-muted);
+  background: rgba(139, 156, 179, 0.12);
+}
+
+.cvr-status-success {
+  color: var(--success);
+  background: rgba(13, 148, 136, 0.12);
+}
+
+.cvr-status-error {
+  color: var(--error);
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.cvr-status-info {
+  color: var(--text-muted);
+  background: rgba(139, 156, 179, 0.12);
+}
+
 .merchant-picker {
   display: flex;
   gap: 0.75rem;

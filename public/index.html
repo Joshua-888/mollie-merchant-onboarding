@@ -71,10 +71,24 @@
 
         <section class="card form-section">
           <h2>2. Virksomhed <span class="required-badge">Mollie: organization</span></h2>
+          <p class="section-hint">
+            Søg på virksomhedsnavn eller indtast CVR-nummer — data hentes automatisk fra CVR-registret.
+          </p>
+          <div id="cvr-status" class="cvr-status hidden" aria-live="polite"></div>
           <div class="form-grid">
-            <div class="full-width">
+            <div class="full-width cvr-combobox">
               <label for="organizationName">Virksomhedsnavn *</label>
-              <input id="organizationName" name="organizationName" type="text" required placeholder="Restaurant Sørensen ApS" />
+              <input
+                id="organizationName"
+                name="organizationName"
+                type="text"
+                required
+                placeholder="Søg virksomhedsnavn…"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="cvr-suggestions"
+              />
+              <div id="cvr-suggestions" class="cvr-suggestions hidden" role="listbox"></div>
             </div>
             <div>
               <label for="legalEntity">Selskabsform *</label>
@@ -84,7 +98,18 @@
             </div>
             <div>
               <label for="registrationNumber">CVR-nummer *</label>
-              <input id="registrationNumber" name="registrationNumber" type="text" required placeholder="12345678" maxlength="8" pattern="[0-9]{8}" title="8 cifre" />
+              <input
+                id="registrationNumber"
+                name="registrationNumber"
+                type="text"
+                required
+                placeholder="12345678"
+                maxlength="8"
+                inputmode="numeric"
+                pattern="[0-9]{8}"
+                title="8 cifre"
+              />
+              <span class="field-hint">8 cifre — udfylder automatisk ved komplet nummer</span>
             </div>
             <div>
               <label for="vatNumber">Momsregistreringsnummer</label>
